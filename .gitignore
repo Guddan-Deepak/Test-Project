@@ -1,0 +1,79 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Logs
+logs/
+*.log
+log/
+debug.log
+error.log
+info.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+out/
+.next/
+.nuxt/
+vite.config.ts.timestamp-*
+*.tsbuildinfo
+
+# Cache
+.cache/
+.tmp/
+temp/
+tmp/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Test results
+test-results/
+junit.xml
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Lockfiles (optional: uncomment if you use only one package manager)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Optional
+# Ignore firebase/emulator data
+.firebase/
+
+# Docker
+docker-data/
+
+# Local SSL keys
+*.pem
+*.crt
+*.key
