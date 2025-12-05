@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser"
 const app = express()
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true
 }))
 
@@ -19,7 +19,7 @@ app.use(cookieParser())
 import { blocklistMiddleware } from "./middlewares/blocklist.middleware.js";
 import { monitorRequest } from "./middlewares/monitoring.middleware.js";
 
-app.use(blocklistMiddleware);
+// app.use(blocklistMiddleware);
 app.use(monitorRequest);
 
 // routes import
