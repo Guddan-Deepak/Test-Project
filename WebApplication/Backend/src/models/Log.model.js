@@ -34,7 +34,7 @@ const logSchema = new Schema(
         },
         httpMethod: {
             type: String,
-            enum: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+            enum: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", null],
             default: null
         },
         statusCode: {

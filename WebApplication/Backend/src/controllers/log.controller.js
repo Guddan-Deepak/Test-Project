@@ -3,6 +3,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Log } from "../models/Log.model.js";
 
+import { v4 as uuidv4 } from 'uuid';
+
 const createLog = asyncHandler(async (req, res) => {
     const logData = req.body;
 
@@ -10,7 +12,23 @@ const createLog = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Log data is required");
     }
 
-    const log = await Log.create(logData);
+    // Auto-generate required fields if missing
+    const enrichedLogData = {
+        ...logData,
+        logId: logData.logId || uuidv4(),
+        timestamp: logData.timestamp || new Date(),
+        // Ensure other required fields have defaults or are checked
+        sourceIP: logData.sourceIP || req.ip || "UNKNOWN",
+        sourceType: logData.sourceType || "APP",
+        targetSystem: logData.targetSystem || "Mini-SOC-Backend",
+        category: logData.category || "REQUEST",
+        eventType: logData.eventType || "MANUAL_LOG",
+        severity: logData.severity || "LOW",
+        classification: logData.classification || "INFO",
+        attackVector: logData.attackVector || "NONE"
+    };
+
+    const log = await Log.create(enrichedLogData);
 
     return res.status(201).json(
         new ApiResponse(201, log, "Log created successfully")

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -11,14 +11,14 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post('http://localhost:5000/api/login', { email, password });
+            const res = await api.post('/auth/login', { username, password });
             if (res.data.success) {
                 localStorage.setItem('token', res.data.token);
                 localStorage.setItem('user', JSON.stringify(res.data.user));
                 navigate('/welcome');
             }
         } catch (err) {
-            setError('Invalid credentials');
+            setError(err.response?.data?.message || 'Invalid credentials');
         }
     };
 
@@ -27,11 +27,11 @@ const Login = () => {
             <h2>Famly Login</h2>
             <form onSubmit={handleLogin}>
                 <div>
-                    <label>Email:</label>
+                    <label>Username:</label>
                     <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         required
                     />
                 </div>
@@ -47,6 +47,9 @@ const Login = () => {
                 {error && <p style={{ color: 'red' }}>{error}</p>}
                 <button type="submit">Login</button>
             </form>
+            <p>
+                Don't have an account? <Link to="/signup">Signup</Link>
+            </p>
         </div>
     );
 };
