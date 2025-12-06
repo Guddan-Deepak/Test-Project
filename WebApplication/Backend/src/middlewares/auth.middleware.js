@@ -1,42 +1,38 @@
-import { ApiError } from '../utils/ApiError.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
 import jwt from 'jsonwebtoken';
-import { Analyst } from '../models/Analyst.model.js';
-import { Admin } from '../models/Admin.model.js';
+import ApiError from '../utils/ApiError.js';
+import asyncHandler from '../utils/asyncHandler.js';
+import Analyst from '../models/Analyst.models.js';
+import Admin from '../models/Admin.models.js';
 
-export const verifyJWT = asyncHandler(async (req, res, next) => {
+export const authMiddleware = asyncHandler(async (req, res, next) => {
     try {
-        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+        const token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
 
         if (!token) {
-            throw new ApiError(401, "Unauthorized request");
+            throw new ApiError(401, 'Unauthorized request');
         }
 
-        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || "access-token-secret");
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
         let user;
-        if (decodedToken.role === 'admin') {
-            user = await Admin.findById(decodedToken?._id).select("-password -refreshToken");
-        } else {
-            user = await Analyst.findById(decodedToken?._id).select("-password -refreshToken");
+        switch (decodedToken.role) {
+            case 'analyst':
+                user = await Analyst.findById(decodedToken.id).select('-passwordHash -refreshToken');
+                break;
+            case 'admin':
+                user = await Admin.findById(decodedToken.id).select('-passwordHash -refreshToken');
+                break;
+            default:
+                throw new ApiError(401, 'Invalid user role');
         }
 
         if (!user) {
-            throw new ApiError(401, "Invalid Access Token");
+            throw new ApiError(401, 'User not found');
         }
 
         req.user = user;
         next();
     } catch (error) {
-        throw new ApiError(401, error?.message || "Invalid access token");
+        throw new ApiError(401, error?.message || 'Invalid access token');
     }
 });
-
-export const authorizeRoles = (...roles) => {
-    return (req, res, next) => {
-        if (!req.user || !roles.includes(req.user.role)) {
-            return next(new ApiError(403, `User role '${req.user.role}' is not authorized to access this resource`));
-        }
-        next();
-    };
-};

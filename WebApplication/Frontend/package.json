@@ -10,21 +10,24 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
     "vite": "^7.2.4"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
     "axios": "^1.13.2",
     "d3-scale": "^4.0.2",
-    "lucide-react": "^0.556.0",
     "prop-types": "^15.8.1",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
     "react-is": "^19.2.1",
-    "react-router-dom": "^7.10.1",
     "react-simple-maps": "^3.0.0",
     "recharts": "^3.5.1",
     "socket.io-client": "^4.8.1",
-    "tailwindcss": "^4.1.17"
+    "emailjs-com": "^3.2.0",
+    "lucide-react": "^0.556.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "react-router-dom": "^7.10.1"
   }
 }

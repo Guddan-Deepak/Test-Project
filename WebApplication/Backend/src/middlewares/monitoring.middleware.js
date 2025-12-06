@@ -1,4 +1,4 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
+import asyncHandler from "../utils/asyncHandler.js";
 import { Log } from "../models/Log.model.js";
 import { v4 as uuidv4 } from "uuid";
 
