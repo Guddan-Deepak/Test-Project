@@ -287,12 +287,34 @@ export const verifyAuth = asyncHandler(async (req, res) => {
         }
 
         if (!user) {
+            // Signal to monitoring middleware
+            res.locals.authAlert = { type: 'TOKEN_ABUSE', pattern: 'User Not Found in Token' };
             return res.status(200).json(new ApiResponse(200, { isAuthenticated: false }, "User not found"));
         }
 
         return res.status(200).json(new ApiResponse(200, { isAuthenticated: true, user }, "Authenticated"));
     } catch (error) {
-        return res.status(200).json(new ApiResponse(200, { isAuthenticated: false }, "Invalid token"));
+        // Signal to monitoring middleware
+        const isMalformed = error.message === 'jwt malformed';
+        const isExpired = error.message.includes('expired');
+
+        res.locals.authAlert = {
+            type: 'TOKEN_ABUSE',
+            pattern: isExpired ? 'Expired Token Usage' :
+                isMalformed ? 'Malformed Token' : 'Invalid Signature/Token'
+        };
+
+        if (isMalformed) {
+            return res.status(400).json(new ApiResponse(400, { isAuthenticated: false }, "Bad Request: Malformed Token"));
+        }
+
+        if (isExpired) {
+            // User requested 304 for Expired Token
+            return res.status(304).json(new ApiResponse(304, { isAuthenticated: false }, "Expired Token"));
+        }
+
+        // For Tampered/Invalid Signature, return 401
+        return res.status(401).json(new ApiResponse(401, { isAuthenticated: false }, "Invalid token signature (Tampered?)"));
     }
 });
 

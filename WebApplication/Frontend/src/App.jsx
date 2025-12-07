@@ -1,39 +1,17 @@
-
-// import { Outlet } from "react-router-dom";
-
-
-// function App() {
-//     return (
-//         <Outlet />
-//     );
-// }
-
-// export default App;
-
-
-
 import { Outlet } from "react-router-dom";
 import Footer from './components/pages/Common/Footer';
 import Header from './components/pages/Common/Header';
 
-
 function App() {
-    return (<>
+    return (
         <div className="flex flex-col min-h-screen">
-
             <Header />
             <main className="flex-1 flex flex-col">
                 <Outlet />
             </main>
-
             <Footer />
-
         </div>
-    </>
     );
 }
 
-
-
-
-export default App
+export default App;

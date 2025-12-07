@@ -8,8 +8,11 @@ const router = Router();
 router.post("/", createLog);
 
 // Protect fetching routes
-router.use(verifyJWT);
-router.get("/", authorizeRoles("admin", "analyst"), getLogs);
-router.get("/stats", authorizeRoles("admin", "analyst"), getLogStats);
+// router.use(verifyJWT);
+// router.get("/", authorizeRoles("admin", "analyst"), getLogs);
+// router.get("/stats", authorizeRoles("admin", "analyst"), getLogStats);
+
+router.get("/", getLogs);
+router.get("/stats", getLogStats);
 
 export default router;
