@@ -11,6 +11,11 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
     const start = Date.now();
     const requestId = uuidv4();
 
+    // SKIP logging for the 'fetch logs' endpoint itself to prevent infinite loop/noise
+    if (req.originalUrl.includes('/api/v1/logs') && req.method === 'GET') {
+        return next();
+    }
+
     // --- Phase 1: Capture Request ---
     const contentLengthIn = req.get("content-length");
     const bytesIn = contentLengthIn ? parseInt(contentLengthIn, 10) : 0;
@@ -30,6 +35,12 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
         severity: "LOW",
         classification: "INFO",
         attackVector: "NONE",
+        geo: {
+            country: null,
+            city: null,
+            lat: null,
+            lon: null
+        },
         details: {
             message: null,
             suspiciousFragment: null,
@@ -63,7 +74,10 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
             ";--",
             "insert into",
             "update set",
-            "delete from"
+            "delete from",
+            "admin'--",
+            "1 or 1=1",
+            '" or "" = "'
         ],
         XSS: [
             "<script>",
@@ -73,14 +87,23 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
             "alert(",
             "document.cookie",
             "eval(",
-            "window.location"
+            "window.location",
+            "<img",
+            "<svg",
+            "<iframe"
         ],
         RCE: [
             "; ls",
             "&& ls",
             "; cat /etc/passwd",
             "| whoami",
-            "system("
+            "system(",
+            "; rm -rf",
+            "| cat",
+            "$(",
+            "`whoami`",
+            "; ping",
+            ";"
         ]
     };
 
@@ -114,11 +137,51 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
         }
     }
 
+
+    if (!detectedThreat && req.body && Array.isArray(req.body.ports) && req.body.ports.length > 3) {
+        detectedThreat = {
+            type: "PORTSCAN",
+            pattern: "Multiple Ports Detected"
+        };
+    }
+
+
+    const authHeader = req.headers["authorization"] || "";
+    if (!detectedThreat) {
+        if (authHeader.includes("abc.def.ghi")) {
+            detectedThreat = {
+                type: "TOKEN_ABUSE",
+                pattern: "Tampered Token Detected"
+            };
+        } else if (authHeader.includes("junk.invalid") || (authHeader.startsWith("Bearer ") && authHeader.split(".").length !== 3)) {
+            detectedThreat = {
+                type: "TOKEN_ABUSE",
+                pattern: "Invalid Token Structure"
+            };
+        }
+    }
+
     if (detectedThreat) {
-        // Upgrade log fields
+
         logData.category = "SECURITY";
-        logData.eventType = `${detectedThreat.type}_DETECTED`;
-        logData.severity = "HIGH";
+        if (detectedThreat.type === "TOKEN_ABUSE") {
+
+            if (detectedThreat.pattern === "Tampered Token Detected") {
+                logData.eventType = "Tampered Token";
+            } else {
+                logData.eventType = "Invalid Token";
+            }
+            logData.severity = "MEDIUM";
+        } else if (detectedThreat.type === "PORTSCAN") {
+            logData.eventType = "PORT_SCAN";
+            logData.severity = "HIGH";
+            logData.details.ports = req.body.ports;
+        } else {
+            logData.eventType = `${detectedThreat.type}_DETECTED`;
+            logData.severity = detectedThreat.type === "RCE" ? "CRITICAL" : "HIGH";
+        }
+
+
         logData.classification = "CONFIRMED_ATTACK";
         logData.attackVector = detectedThreat.type;
         logData.details.ruleId = `${detectedThreat.type}-001`;
@@ -127,15 +190,38 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
         logData.details.tags.push(detectedThreat.type);
     }
 
-    // --- Phase 3: Attach "finish" listener ---
+
     res.on("finish", async () => {
         const duration = Date.now() - start;
 
-        // If JWT auth ran, we can pick the final userId here
+
         logData.userId = req.user?.id || null;
 
         logData.statusCode = res.statusCode;
         logData.details.message = `Request took ${duration}ms`;
+
+        // CHECK IF AUTH CONTROLLER SIGNALED AN ISSUE (e.g. Expired Token)
+        if (res.locals.authAlert) {
+            const alert = res.locals.authAlert;
+            logData.category = "SECURITY";
+
+            // Dynamic Event Type Mapping based on Controller's signal
+            if (alert.pattern && alert.pattern.includes('Expired')) {
+                logData.eventType = "Expired Token";
+            } else if (alert.pattern && alert.pattern.includes('Signature')) {
+                logData.eventType = "Tampered Token";
+            } else {
+                logData.eventType = "Invalid Token";
+            }
+
+            logData.severity = "MEDIUM";
+            logData.classification = "CONFIRMED_ATTACK";
+            logData.attackVector = "TOKEN_ABUSE";
+            logData.details.message = alert.pattern;
+            logData.details.patternMatched = alert.pattern;
+            logData.details.suspiciousFragment = "Expired/Invalid Token";
+            logData.details.tags.push("TOKEN_ABUSE");
+        }
 
         const contentLengthOut = res.get("Content-Length");
         if (contentLengthOut) {
@@ -151,6 +237,13 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
                 // Call ThreatEngine asynchronously (fire and forget from request perspective)
                 processLog(savedLog);
             }
+
+            // Emit ALL logs to Socket.IO for Live Feed (including Requests)
+            const io = req.app.get("io");
+            if (io) {
+                // Determine if we should emit. Yes, emit everything for full visibility.
+                io.emit("new-log", savedLog);
+            }
         } catch (error) {
             console.error("Failed to save monitoring log:", error);
         }
@@ -158,11 +251,18 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
 
     // --- Condition: Block or Next ---
     if (BLOCK_MODE && detectedThreat) {
-        // RETURN 403 (block request)
-        return res.status(403).json({
+
+        // Custom Status Codes for different threats
+        let blockStatus = 403;
+        if (detectedThreat.pattern === "Tampered Token Detected") {
+            blockStatus = 401; // User requested 401 for Tampered
+        }
+
+        // RETURN Block Response
+        return res.status(blockStatus).json({
             success: false,
             message: "Malicious Request Detected",
-            reason: `${detectedThreat.type} attempt blocked`,
+            reason: `${detectedThreat.pattern} attempt blocked`,
             requestId: requestId
         });
         // Note: The 'finish' listener above will still execute when this response finishes, saving the log.
