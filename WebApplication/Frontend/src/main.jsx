@@ -33,6 +33,7 @@ import AdminProfilePage from './pages/admin/AdminProfilePage.jsx'
 import Settings from './pages/admin/Settings.jsx'
 
 import AssignmentRequests from './pages/admin/AssignmentRequests.jsx'
+import AdminIncidents from './pages/admin/AdminIncidents.jsx'
 import NotFound from './components/pages/Common/NotFound.jsx'
 
 const router = createBrowserRouter(
@@ -51,6 +52,7 @@ const router = createBrowserRouter(
             <Route path='admin/profile' element={<AdminProfilePage />} />
             <Route path='analyst/profile' element={<AnalystProfilePage />} />
             {/* Analyst Dashboard */}
+            {/* Analyst Dashboard */}
             <Route path='dashboard' element={<DashboardLayout />}>
                 <Route index element={<Overview />} />
                 <Route path='logs' element={<LiveLogs />} />
@@ -66,7 +68,7 @@ const router = createBrowserRouter(
                 <Route path='blocklist' element={<Blocklist />} />
                 <Route path='users' element={<Users />} />
                 <Route path='assignment-requests' element={<AssignmentRequests />} />
-                <Route path='incidents' element={<div className="text-white p-8">Incident Management (Coming Soon)</div>} />
+                <Route path='incidents' element={<AdminIncidents />} />
                 <Route path='playbooks' element={<div className="text-white p-8">SOAR Playbooks (Coming Soon)</div>} />
                 <Route path='audit' element={<div className="text-white p-8">Audit Logs (Coming Soon)</div>} />
                 <Route path='settings' element={<Settings />} />
