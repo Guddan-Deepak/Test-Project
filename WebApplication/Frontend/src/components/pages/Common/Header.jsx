@@ -44,7 +44,7 @@ const Header = () => {
     };
 
     // ------------------ BLUE THEME STYLES ------------------
-    const headerBg = "bg-gradient-to-r from-blue-600 to-blue-500 border-b border-blue-700 sticky top-0 z-50";
+    const headerBg = "bg-gradient-to-r from-blue-600 to-blue-500 border-b border-blue-700 sticky top-0 z-[100]";
     const accentColor = "text-sky-200";
     const navLinkText = "text-white hover:text-sky-200 transition-colors";
     const logoutButtonClasses = `

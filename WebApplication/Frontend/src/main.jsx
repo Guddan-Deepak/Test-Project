@@ -30,7 +30,10 @@ import KnowledgeBase from './pages/admin/KnowledgeBase.jsx'
 import Blocklist from './pages/admin/Blocklist.jsx'
 import Users from './pages/admin/Users.jsx'
 import AdminProfilePage from './pages/admin/AdminProfilePage.jsx'
+import Settings from './pages/admin/Settings.jsx'
+
 import AssignmentRequests from './pages/admin/AssignmentRequests.jsx'
+import NotFound from './components/pages/Common/NotFound.jsx'
 
 const router = createBrowserRouter(
     createRoutesFromElements(
@@ -66,9 +69,11 @@ const router = createBrowserRouter(
                 <Route path='incidents' element={<div className="text-white p-8">Incident Management (Coming Soon)</div>} />
                 <Route path='playbooks' element={<div className="text-white p-8">SOAR Playbooks (Coming Soon)</div>} />
                 <Route path='audit' element={<div className="text-white p-8">Audit Logs (Coming Soon)</div>} />
-                <Route path='settings' element={<div className="text-white p-8">System Settings (Coming Soon)</div>} />
+                <Route path='settings' element={<Settings />} />
             </Route>
 
+            {/* 404 Route */}
+            <Route path='*' element={<NotFound />} />
         </Route>
     )
 )

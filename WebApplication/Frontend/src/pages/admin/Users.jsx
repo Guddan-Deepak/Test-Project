@@ -8,7 +8,9 @@ const Users = () => {
     const [showModal, setShowModal] = useState(false);
 
     const [formData, setFormData] = useState({
-        username: '',
+        name: '',
+        email: '',
+        phone: '',
         password: '',
         role: 'analyst'
     });
@@ -37,7 +39,7 @@ const Users = () => {
             if (data.success) {
                 fetchUsers();
                 setShowModal(false);
-                setFormData({ username: '', password: '', role: 'analyst' });
+                setFormData({ name: '', email: '', phone: '', password: '', role: 'analyst' });
                 alert('User created successfully');
             }
         } catch (error) {
@@ -76,7 +78,7 @@ const Users = () => {
                 <table className="w-full text-left">
                     <thead className="bg-slate-900/50 text-slate-400 text-xs uppercase font-bold">
                         <tr>
-                            <th className="p-4">Username</th>
+                            <th className="p-4">User Details</th>
                             <th className="p-4">Role</th>
                             <th className="p-4">Created At</th>
                             <th className="p-4 text-right">Actions</th>
@@ -89,7 +91,10 @@ const Users = () => {
                                     <div className={`p-2 rounded-full ${user.role === 'admin' ? 'bg-red-900/50 text-red-400' : 'bg-blue-900/50 text-blue-400'}`}>
                                         {user.role === 'admin' ? <Shield size={16} /> : <User size={16} />}
                                     </div>
-                                    {user.username}
+                                    <div>
+                                        <div className="text-white">{user.name}</div>
+                                        <div className="text-xs text-slate-400">{user.email}</div>
+                                    </div>
                                 </td>
                                 <td className="p-4">
                                     <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${user.role === 'admin' ? 'bg-red-900/30 text-red-500 border border-red-900' : 'bg-blue-900/30 text-blue-500 border border-blue-900'}`}>
@@ -118,8 +123,16 @@ const Users = () => {
                         </div>
                         <form onSubmit={handleCreate} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Username</label>
-                                <input required type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-red-500" />
+                                <label className="block text-sm font-medium text-slate-400 mb-1">Full Name</label>
+                                <input required type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-red-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
+                                <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-red-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-1">Phone Number</label>
+                                <input required type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white outline-none focus:border-red-500" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-400 mb-1">Password</label>

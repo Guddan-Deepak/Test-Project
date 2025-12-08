@@ -27,31 +27,38 @@ export const getAllUsers = asyncHandler(async (req, res) => {
  * @route   POST /api/v1/admin/users
  * @access  Admin
  */
+/**
+ * @desc    Create a new user (Admin or Analyst)
+ * @route   POST /api/v1/admin/users
+ * @access  Admin
+ */
 export const createUser = asyncHandler(async (req, res) => {
-    const { username, password, role } = req.body;
+    const { name, email, phone, password, role } = req.body;
 
-    if (!username || !password || !role) {
-        throw new ApiError(400, "Username, password and role are required");
+    if (!name || !email || !password || !role || !phone) {
+        throw new ApiError(400, "All fields (name, email, phone, password, role) are required");
     }
 
     const Model = role === 'admin' ? Admin : Analyst;
 
-    // Check global uniqueness (optional but recommended to avoid confusion)
-    const existsAdmin = await Admin.findOne({ username });
-    const existsAnalyst = await Analyst.findOne({ username });
+    // Check availability by email
+    const existsAdmin = await Admin.findOne({ email });
+    const existsAnalyst = await Analyst.findOne({ email });
 
     if (existsAdmin || existsAnalyst) {
-        throw new ApiError(400, "Username already exists");
+        throw new ApiError(400, "User with this email already exists");
     }
 
     const user = await Model.create({
-        username,
-        password,
+        name,
+        email,
+        phone_no: phone,
+        passwordHash: password, // Pre-save hook will hash this
         role,
-        createdBy: req.user.username
+        isVerified: true // Admin created users are verified by default
     });
 
-    const createdUser = await Model.findById(user._id).select("-password -refreshToken");
+    const createdUser = await Model.findById(user._id).select("-passwordHash -refreshToken");
 
     res.status(201).json(new ApiResponse(201, createdUser, "User created successfully"));
 });

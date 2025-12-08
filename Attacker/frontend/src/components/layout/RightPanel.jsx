@@ -87,7 +87,7 @@ const RightPanel = () => {
             setIsConnected(false);
         });
 
-        socket.on('new-log', (newLog) => {
+        socket.on('NEW_LOG', (newLog) => {
             // Add new log to the TOP
             const uiLog = transformLog(newLog);
             setLogs(prev => [uiLog, ...prev]);
@@ -104,8 +104,8 @@ const RightPanel = () => {
 
         const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
 
-        // Check if we are near the bottom (within 20px)
-        if (scrollHeight - scrollTop - clientHeight < 20) {
+        // Check if we are near the bottom (within 50px)
+        if (scrollHeight - scrollTop - clientHeight < 50) {
             const nextPage = page + 1;
             setPage(nextPage);
             fetchLogs(nextPage);
