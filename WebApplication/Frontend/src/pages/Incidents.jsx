@@ -58,6 +58,7 @@ const Incidents = () => {
             if (activeTab === 'unassigned') params.assignedTo = 'unassigned';
 
             const res = await api.get('/incidents', { params });
+            console.log(res);
             if (res.data.success) {
                 const newIncidents = res.data.data.incidents;
                 setIncidents(prev => {
@@ -214,7 +215,7 @@ const Incidents = () => {
                                             {incident.assignedTo && (
                                                 <p className="flex items-center gap-1">
                                                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                                                    Assigned to: <span className="text-blue-400 font-semibold">{incident.assignedTo}</span>
+                                                    Assigned to: <span className="text-blue-400 font-semibold">{incident.assignedTo?.name || incident.assignedTo?.email || "Unknown"}</span>
                                                 </p>
                                             )}
                                         </div>

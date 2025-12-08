@@ -12,7 +12,7 @@ const IncidentDetail = () => {
     const [incident, setIncident] = useState(null);
     const [notes, setNotes] = useState('');
     const [status, setStatus] = useState('');
-    const [assignedTo, setAssignedTo] = useState('');
+    const [assignedTo, setAssignedTo] = useState(null);
     const [loading, setLoading] = useState(false);
 
     // Use local user state (would ideally be from context, but using localStorage for quick sync consistent with layouts)
@@ -46,7 +46,7 @@ const IncidentDetail = () => {
                 setIncident(data);
                 setNotes(data.analystNotes || '');
                 setStatus(data.status);
-                setAssignedTo(data.assignedTo || '');
+                setAssignedTo(data.assignedTo || null);
             }
         } catch (error) {
             console.error("Failed to fetch incident", error);
@@ -78,33 +78,7 @@ const IncidentDetail = () => {
         }
     };
 
-    const handleAssignToMe = async () => {
-        setLoading(true);
-        try {
-            const res = await api.post(`/incidents/${id}/assign`);
-            if (res.data.success) {
-                fetchIncident();
-            }
-        } catch (error) {
-            alert(error.response?.data?.message || "Failed to assign incident");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleUnassign = async () => {
-        setLoading(true);
-        try {
-            const res = await api.post(`/incidents/${id}/unassign`);
-            if (res.data.success) {
-                fetchIncident();
-            }
-        } catch (error) {
-            alert(error.response?.data?.message || "Failed to unassign incident");
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Assignment functions removed as per requirement
 
     if (!incident) return <div className="text-slate-400 p-10 text-center">Loading incident...</div>;
 
@@ -159,6 +133,7 @@ const IncidentDetail = () => {
                             <div>
                                 <label className="text-slate-500 text-xs uppercase font-bold">Total Events</label>
                                 <p className="text-slate-300">{incident.occurrenceCount}</p>
+
                             </div>
                         </div>
                     </div>
@@ -204,55 +179,19 @@ const IncidentDetail = () => {
                                 >
                                     <option value="OPEN">Open</option>
                                     <option value="IN_PROGRESS">In Progress</option>
-                                    <option value="RESOLVED">Resolved (Fixed)</option>
-                                    <option value="CLOSED_FALSE_POSITIVE">Closed (False Positive)</option>
-                                    <option value="CLOSED_TRUE_POSITIVE">Closed (True Positive)</option>
+
+                                    {/* Only Admins can Resolve/Close */}
+                                    {currentUser?.role === 'admin' && (
+                                        <>
+                                            <option value="RESOLVED">Resolved (Fixed)</option>
+                                            <option value="FALSE_POSITIVE">Closed (False Positive)</option>
+                                        </>
+                                    )}
                                 </select>
                             </div>
 
-                            <div>
-                                <label className="block text-slate-400 text-sm font-medium mb-1">Assigned Analyst</label>
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex gap-2">
-                                        <div className={`flex-1 flex items-center bg-slate-900 border ${assignedTo ? 'border-blue-500/50' : 'border-slate-600'} text-white rounded p-2`}>
-                                            <User size={16} className={`mr-2 ${assignedTo ? 'text-blue-400' : 'text-slate-500'}`} />
-                                            <span className={assignedTo ? 'text-white' : 'text-slate-500'}>
-                                                {assignedTo || "Unassigned"}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Assignment Actions */}
-                                    <div className="flex gap-2">
-                                        {!assignedTo && (
-                                            <button
-                                                onClick={handleAssignToMe}
-                                                disabled={loading}
-                                                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm py-2 rounded transition-colors disabled:opacity-50"
-                                            >
-                                                Assign to Me
-                                            </button>
-                                        )}
-
-                                        {assignedTo === currentUser.username && (
-                                            <button
-                                                onClick={handleUnassign}
-                                                disabled={loading}
-                                                className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm py-2 rounded transition-colors disabled:opacity-50"
-                                            >
-                                                Unassign
-                                            </button>
-                                        )}
-
-                                        {assignedTo && assignedTo !== currentUser.username && (
-                                            <div className="flex-1 bg-slate-800 border border-slate-700 text-slate-500 text-sm py-2 rounded text-center cursor-not-allowed">
-                                                Locked by {assignedTo}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
                         </div>
+                        {/* Assigned Analyst section removed */}
                     </div>
 
                     <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 flex-1 flex flex-col">
@@ -264,8 +203,17 @@ const IncidentDetail = () => {
                             placeholder="Enter investigation details, analysis, and containment steps..."
                         />
                     </div>
+
+                    <button
+                        onClick={handleSave}
+                        disabled={loading}
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Save size={20} />
+                        {loading ? 'Saving...' : 'Save Changes'}
+                    </button>
                 </div>
-            </div>
+            </div >
         </div >
     );
 };

@@ -4,7 +4,7 @@ import ApiError from "../utils/ApiError.js";
 import Incident from "../models/Incident.model.js";
 import IncidentAssignmentRequest from "../models/IncidentAssignmentRequest.model.js";
 
-const VALID_STATUSES = ["OPEN", "IN_PROGRESS", "CLOSED_TRUE_POSITIVE", "CLOSED_FALSE_POSITIVE"];
+const VALID_STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED", "FALSE_POSITIVE", "ASSIGNED"];
 const VALID_SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
 const getIncidents = asyncHandler(async (req, res) => {
@@ -22,7 +22,8 @@ const getIncidents = asyncHandler(async (req, res) => {
     }
     if (assignedTo) {
         if (assignedTo === 'me') {
-            query.assignedTo = req.user.email;
+            query.assignedTo = req.user._id;
+            query.status = "ASSIGNED";
         } else if (assignedTo === 'null' || assignedTo === 'unassigned') {
             query.assignedTo = null;
             query.status = "OPEN";
@@ -35,6 +36,7 @@ const getIncidents = asyncHandler(async (req, res) => {
             const incidentIds = myRequests.map(req => req.incident);
             query._id = { $in: incidentIds };
         } else {
+            // Assuming assignedTo query param is an ID if specific
             query.assignedTo = assignedTo;
         }
     }
@@ -48,6 +50,7 @@ const getIncidents = asyncHandler(async (req, res) => {
     const skip = (options.page - 1) * options.limit;
 
     const incidents = await Incident.find(query)
+        .populate("assignedTo", "name email") // Populate Analyst details
         .sort(options.sort)
         .skip(skip)
         .limit(options.limit);
@@ -78,13 +81,17 @@ const assignIncident = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Incident not found");
     }
 
-    if (incident.assignedTo && incident.assignedTo !== user.email) {
-        throw new ApiError(403, `Incident is already assigned to ${incident.assignedTo}. Only admins can reassign.`);
+    // Check if assigned and if assigned to someone else
+    if (incident.assignedTo && incident.assignedTo.toString() !== user._id.toString()) {
+        throw new ApiError(403, "Incident is already assigned to another analyst. Only admins can reassign.");
     }
 
-    incident.assignedTo = user.email;
-    incident.status = "IN_PROGRESS";
+    incident.assignedTo = user._id;
+    incident.status = "ASSIGNED";
     await incident.save();
+
+    // Populate for response
+    await incident.populate("assignedTo", "name email");
 
     return res.status(200).json(
         new ApiResponse(200, incident, `Incident assigned to ${user.email}`)
@@ -101,14 +108,14 @@ const unassignIncident = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Incident not found");
     }
 
-    if (incident.assignedTo !== user.email) {
+    if (incident.assignedTo && incident.assignedTo.toString() !== user._id.toString()) {
         if (user.role !== 'admin') {
             throw new ApiError(403, "You can only unassign incidents assigned to yourself.");
         }
     }
 
     incident.assignedTo = null;
-    if (incident.status === "IN_PROGRESS") {
+    if (["ASSIGNED", "IN_PROGRESS"].includes(incident.status)) {
         incident.status = "OPEN";
     }
     await incident.save();
@@ -135,12 +142,27 @@ const triageIncident = asyncHandler(async (req, res) => {
     const updateFields = {};
 
     if (status && VALID_STATUSES.includes(status.toUpperCase())) {
-        updateFields.status = status.toUpperCase();
+        const newStatus = status.toUpperCase();
+
+        // Role-based Status Restrictions
+        if (req.user.role !== 'admin') {
+            // Analysts can only move to IN_PROGRESS (Submit for review)
+            if (["RESOLVED", "FALSE_POSITIVE"].includes(newStatus)) {
+                throw new ApiError(403, "Only admins can close incidents (Resolve or False Positive)");
+            }
+        }
+        updateFields.status = newStatus;
     }
 
     if (assignedTo) {
-        if (incident.assignedTo && incident.assignedTo !== req.user.email && incident.assignedTo !== assignedTo && req.user.role !== 'admin') {
-            throw new ApiError(403, "Cannot reassign incident assigned to another analyst");
+        // If reassigning, ensure permissions
+        if (incident.assignedTo && incident.assignedTo.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            // If trying to assign to self while validly open, it's fine. 
+            // But if assignedTo is set, check match.
+            // If incident.assignedTo exists AND it's not me AND I'm not admin -> Block
+            if (incident.assignedTo.toString() !== assignedTo) {
+                throw new ApiError(403, "Cannot reassign incident assigned to another analyst");
+            }
         }
         updateFields.assignedTo = assignedTo;
     }
@@ -175,7 +197,8 @@ const getIncidentDetails = asyncHandler(async (req, res) => {
     }
 
     const incident = await Incident.findOne({ incidentId })
-        .populate('relatedLogs');
+        .populate('relatedLogs')
+        .populate('assignedTo', 'name email');
 
     if (!incident) {
         throw new ApiError(404, "Incident not found");

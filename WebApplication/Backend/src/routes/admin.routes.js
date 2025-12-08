@@ -18,6 +18,15 @@ router.route("/health").get(getSystemHealth);
 router.route("/assignment-requests").get(getAssignmentRequests);
 router.route("/assignment-request/:requestId/handle").post(handleAssignmentRequest);
 
+// Incident Management
+import { getAllIncidents, updateIncident, autoResolveIncident } from '../controllers/admin.controller.js';
+
+router.route("/incidents").get(getAllIncidents);
+router.route("/incidents/:incidentId")
+    .patch(updateIncident);
+router.route("/incidents/:incidentId/resolve")
+    .post(autoResolveIncident);
+
 // Modules
 // router.use("/rules", ruleRouter); // Removed
 router.use("/knowledge", ragChunkRouter);

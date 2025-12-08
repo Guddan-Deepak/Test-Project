@@ -64,7 +64,7 @@ const logSchema = new Schema(
         },
         attackVector: {
             type: String,
-            enum: ["NONE", "SQLI", "XSS", "BRUTEFORCE", "BRUTE_FORCE", "RCE", "PORTSCAN", "DDOS", "TOKEN_ABUSE", "MALWARE", "OTHER"],
+            enum: ["NONE", "SQLI", "XSS", "BRUTE_FORCE", "RCE", "PORTSCAN", "DDOS", "TOKEN_ABUSE", "MALWARE", "OTHER"],
             required: true
         },
         geo: {
