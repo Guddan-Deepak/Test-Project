@@ -21,6 +21,7 @@ import Overview from './pages/Overview.jsx'
 import LiveLogs from './pages/LiveLogs.jsx'
 import Incidents from './pages/Incidents.jsx'
 import IncidentDetail from './pages/IncidentDetail.jsx'
+import AnalystProfilePage from './pages/AnalystProfilePage.jsx'
 
 // Admin Dashboard Components
 import AdminLayout from './layouts/AdminLayout.jsx'
@@ -28,6 +29,7 @@ import AdminOverview from './pages/admin/AdminOverview.jsx'
 import KnowledgeBase from './pages/admin/KnowledgeBase.jsx'
 import Blocklist from './pages/admin/Blocklist.jsx'
 import Users from './pages/admin/Users.jsx'
+import AdminProfilePage from './pages/admin/AdminProfilePage.jsx'
 import AssignmentRequests from './pages/admin/AssignmentRequests.jsx'
 import AdminIncidents from './pages/admin/AdminIncidents.jsx'
 
@@ -44,7 +46,8 @@ const router = createBrowserRouter(
             <Route path='complete-profile' element={<CompleteProfile />} />
             <Route path='contact' element={<Contact />} />
             <Route path='about' element={<About />} />
-
+            <Route path='admin/profile' element={<AdminProfilePage />} />
+            <Route path='analyst/profile' element={<AnalystProfilePage />} />
             {/* Analyst Dashboard */}
             {/* Analyst Dashboard */}
             <Route path='dashboard' element={<DashboardLayout />}>
@@ -52,6 +55,7 @@ const router = createBrowserRouter(
                 <Route path='logs' element={<LiveLogs />} />
                 <Route path='incidents' element={<Incidents />} />
                 <Route path='incidents/:id' element={<IncidentDetail />} />
+
             </Route>
 
             {/* Admin Dashboard */}

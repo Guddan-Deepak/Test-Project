@@ -194,10 +194,10 @@ const DashboardLayout = () => {
                             </div>
 
                             <div className="flex items-center gap-4 pl-6 border-l border-slate-700">
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-medium text-slate-200">{user?.username || "analyst"}</p>
+                                <NavLink to="/analyst/profile" className="text-right hidden sm:block hover:bg-slate-800/50 p-2 rounded transition-colors group cursor-pointer">
+                                    <p className="text-sm font-medium text-slate-200 group-hover:text-cyan-400 transition-colors">{user?.username || "analyst"}</p>
                                     <p className="text-xs text-slate-500 capitalize">{user?.role || "Analyst"}</p>
-                                </div>
+                                </NavLink>
                                 <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Logout">
                                     <LogOut size={18} />
                                 </button>

@@ -19,7 +19,7 @@ const Sidebar = () => {
         { name: 'XSS Attack', path: '/xss', icon: Code },
         { name: 'Command Injection (RCE)', path: '/rce', icon: Terminal },
         { name: 'Token Abuse', path: '/token-abuse', icon: Key },
-        { name: 'Port Scan', path: '/port-scan', icon: Scan },
+        //  { name: 'Port Scan', path: '/port-scan', icon: Scan },
         { name: 'Bruteforce Login', path: '/bruteforce', icon: Unlock },
         { name: 'File Upload Malware', path: '/malware', icon: FileWarning, disabled: true },
         { name: 'DDoS Simulation', path: '/ddos', icon: WifiOff, disabled: true },

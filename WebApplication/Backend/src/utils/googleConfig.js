@@ -7,7 +7,7 @@ const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL; // Ensure this matc
 export const oauth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
-    GOOGLE_CALLBACK_URL // This should be the Frontend URL if using the flow described
+    GOOGLE_CALLBACK_URL
 );
 
 export const getGoogleAuthURL = () => {

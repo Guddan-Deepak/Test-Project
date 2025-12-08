@@ -34,6 +34,10 @@ import logRouter from './routes/log.routes.js'
 import authRouter from './routes/auth.route.js'
 import incidentRouter from './routes/incident.routes.js'
 import adminRouter from './routes/admin.routes.js'
+import analystProfileRouter from './routes/analystProfile.routes.js'
+import adminProfileRouter from './routes/adminProfile.routes.js'
+
+import chatbotRouter from './routes/chatbot.route.js';
 import aiRouter from './routes/ai.routes.js'
 
 // routes declaration
@@ -42,6 +46,9 @@ app.use("/api/v1/logs", logRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/incidents", incidentRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/analyst/profile", analystProfileRouter);
+app.use("/api/v1/admin/profile", adminProfileRouter);
+app.use("/api/v1/chat", chatbotRouter);
 app.use("/api/v1/ai", aiRouter);
 
 export { app };

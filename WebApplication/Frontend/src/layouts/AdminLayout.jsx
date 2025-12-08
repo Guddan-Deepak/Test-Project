@@ -66,9 +66,9 @@ const AdminLayout = () => {
         if (path.includes('rules')) return 'Detection Rules';
         if (path.includes('blocklist')) return 'Blocklist Manager';
         if (path.includes('incidents')) return 'Incident Management';
-        if (path.includes('playbooks')) return 'Automation Playbooks';
+        //  if (path.includes('playbooks')) return 'Automation Playbooks';
         if (path.includes('users')) return 'User Management';
-        if (path.includes('audit')) return 'Audit Logs';
+        // if (path.includes('audit')) return 'Audit Logs';
         if (path.includes('settings')) return 'System Settings';
         return 'Admin Overview';
     }
@@ -139,15 +139,15 @@ const AdminLayout = () => {
                     <NavLink to="/admin/assignment-requests" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
                         <BookOpen size={20} /> <span>Requests</span>
                     </NavLink>
-                    <NavLink to="/admin/playbooks" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
+                    {/* <NavLink to="/admin/playbooks" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
                         <BookOpen size={20} /> <span>Playbooks</span>
-                    </NavLink>
+                    </NavLink> */}
                     <NavLink to="/admin/users" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
                         <Users size={20} /> <span>User Mgmt</span>
                     </NavLink>
-                    <NavLink to="/admin/audit" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
+                    {/* <NavLink to="/admin/audit" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
                         <Activity size={20} /> <span>Audit Logs</span>
-                    </NavLink>
+                    </NavLink> */}
                     <NavLink to="/admin/settings" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
                         <Settings size={20} /> <span>Settings</span>
                     </NavLink>
@@ -182,10 +182,10 @@ const AdminLayout = () => {
                             <span className="text-xs font-medium text-red-400 tracking-wide">System Active</span>
                         </div>
                         <div className="flex items-center gap-4 pl-6 border-l border-slate-700">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-sm font-medium text-slate-200">{user?.username}</p>
-                                <p className="text-xs text-slate-500 capitalize">Administrator</p>
-                            </div>
+
+                            <p className="text-sm font-medium text-slate-200 group-hover:text-red-400 transition-colors">{user?.username}</p>
+                            <p className="text-xs text-slate-500 capitalize">Administrator</p>
+
                             <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                                 <LogOut size={18} />
                             </button>

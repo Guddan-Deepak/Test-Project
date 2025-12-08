@@ -366,6 +366,7 @@ export const googleLogin = asyncHandler(async (req, res) => {
 
     const { getGoogleUser } = await import('../utils/googleConfig.js');
     const googleUser = await getGoogleUser(code);
+    console.log("user info with login with google", googleUser);
     const { email, name, picture } = googleUser;
 
     // Check if user exists in either Analyst or Admin

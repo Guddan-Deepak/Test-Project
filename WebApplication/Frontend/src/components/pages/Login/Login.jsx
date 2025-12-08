@@ -303,7 +303,7 @@ const Login = () => {
             const trimmedIdentifier = formData.identifier.trim();
             const { success, error } = await login(trimmedIdentifier, formData.password, formData.role);
             if (success) {
-                navigate("/");
+                navigate("/welcome");
             } else {
                 setError(error || "Invalid credentials");
                 // navigate("/welcome"); // REMOVED: Correct behavior is to stay on login page
