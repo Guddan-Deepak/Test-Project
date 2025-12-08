@@ -46,7 +46,8 @@ const incidentSchema = new Schema(
             default: null
         },
         assignedTo: {
-            type: String, // User ID of the analyst
+            type: Schema.Types.ObjectId,
+            ref: "Analyst",
             default: null
         },
         triggerRule: {
