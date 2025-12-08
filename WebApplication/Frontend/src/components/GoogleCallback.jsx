@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../utils/api";
+import { useAuth } from "../utils/authContext";
 
 const GoogleCallback = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { autoLogin } = useAuth();
     const processed = useRef(false);
 
     useEffect(() => {
@@ -28,9 +30,9 @@ const GoogleCallback = () => {
                 } else {
                     // Login successful
                     localStorage.setItem("user", JSON.stringify(user));
-                    // Access token is handled by backend cookies usually, but if returned in JSON:
-                    // localStorage.setItem("accessToken", accessToken); 
-                    navigate("/welcome");
+                    // Update auth context state to trigger Header update
+                    autoLogin();
+                    navigate("/");
                 }
             } catch (error) {
                 console.error("Google Login Error:", error);
@@ -39,7 +41,7 @@ const GoogleCallback = () => {
         };
 
         handleCallback();
-    }, [searchParams, navigate]);
+    }, [searchParams, navigate, autoLogin]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">

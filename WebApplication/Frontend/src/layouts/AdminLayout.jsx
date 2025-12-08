@@ -173,10 +173,10 @@ const AdminLayout = () => {
                             <span className="text-xs font-medium text-red-400 tracking-wide">System Active</span>
                         </div>
                         <div className="flex items-center gap-4 pl-6 border-l border-slate-700">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-sm font-medium text-slate-200">{user?.username}</p>
-                                <p className="text-xs text-slate-500 capitalize">Administrator</p>
-                            </div>
+
+                            <p className="text-sm font-medium text-slate-200 group-hover:text-red-400 transition-colors">{user?.username}</p>
+                            <p className="text-xs text-slate-500 capitalize">Administrator</p>
+
                             <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                                 <LogOut size={18} />
                             </button>

@@ -201,7 +201,7 @@
 // export default Header;
 
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, NavLink } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { useAuth } from "../../../utils/authContext";
 import useUser from "../../../hooks/useUser";
@@ -340,19 +340,24 @@ const Header = () => {
                                 /* User Info Loaded */
                                 <div className="flex items-center space-x-3">
                                     <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-sky-400">
-                                        {user.profilePhoto ? (
-                                            <img
-                                                src={profileImage || user.profilePhoto}
-                                                alt={user.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-blue-900 flex items-center justify-center">
-                                                <span className="text-white font-semibold text-sm">
-                                                    {user.name?.charAt(0).toUpperCase() || 'U'}
-                                                </span>
-                                            </div>
-                                        )}
+                                        <NavLink
+                                            to={user?.role === 'admin' ? "/admin/profile" : "/analyst/profile"}
+                                            className="w-full h-full hidden sm:block transition-opacity hover:opacity-80 cursor-pointer"
+                                        >
+                                            {user.profilePhoto ? (
+                                                <img
+                                                    src={profileImage || user.profilePhoto}
+                                                    alt={user.name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-blue-900 flex items-center justify-center">
+                                                    <span className="text-white font-semibold text-sm">
+                                                        {user.name?.charAt(0).toUpperCase() || 'U'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </NavLink>
                                     </div>
                                     <div className="hidden lg:block text-right">
                                         <p className="text-sm font-medium text-gray-300">Welcome back,</p>
