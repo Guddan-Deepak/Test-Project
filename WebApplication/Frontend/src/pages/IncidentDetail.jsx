@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import api from '../utils/api';
-import { ArrowLeft, Save, User, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Save, User, ShieldAlert, Sparkles } from 'lucide-react';
 // Socket not currently used in this component, but imported for future use
 // import { useSocket } from '../context/SocketContext';
 
 const IncidentDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { openChat } = useOutletContext();
     const [incident, setIncident] = useState(null);
     const [notes, setNotes] = useState('');
     const [status, setStatus] = useState('');
@@ -105,34 +106,33 @@ const IncidentDetail = () => {
         }
     };
 
-    if (!incident) return <div className="p-8 text-white">Loading...</div>;
+    if (!incident) return <div className="text-slate-400 p-10 text-center">Loading incident...</div>;
 
     return (
-        <div className="p-8 h-full flex flex-col">
-            <button onClick={() => navigate('/dashboard/incidents')} className="flex items-center text-slate-400 hover:text-white mb-6 w-fit">
-                <ArrowLeft size={18} className="mr-2" /> Back to Incidents
-            </button>
-
-            <div className="flex justify-between items-start mb-8">
+        <div className="flex flex-col h-full bg-[#0B1120] text-slate-100 p-6 overflow-hidden">
+            {/* Header */}
+            <div className="flex justify-between items-start mb-6">
                 <div>
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-3xl font-bold text-white tracking-tight">{incident.incidentId}</h1>
-                        <span className={`px-3 py-1 rounded text-sm font-bold border ${getHeaderSeverityClass(incident.severity)}`}>
+                    <div className="flex items-center gap-4 mb-2">
+                        <button onClick={() => navigate('/dashboard/incidents')} className="text-slate-400 hover:text-white transition-colors">
+                            <ArrowLeft size={20} />
+                        </button>
+                        <h1 className="text-2xl font-bold text-white">Incident Details</h1>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getHeaderSeverityClass(incident.severity)}`}>
                             {incident.severity}
                         </span>
-                        <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded text-sm font-medium border border-slate-700">
-                            {incident.status.replace('_', ' ')}
-                        </span>
+                        <span className="text-slate-500 text-sm font-mono">#{incident.incidentId}</span>
                     </div>
-                    <p className="text-xl text-slate-300 mt-2">{incident.type}</p>
+                    <p className="text-slate-400 ml-9">{incident.type}</p>
                 </div>
 
-                <div className="flex gap-3">
-                    <button onClick={handleSave} disabled={loading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">
-                        <Save size={18} />
-                        Save Changes
-                    </button>
-                </div>
+                <button
+                    onClick={() => openChat(incident.incidentId)}
+                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-2 rounded-lg shadow-lg shadow-indigo-500/20 transition-all font-medium"
+                >
+                    <Sparkles size={18} />
+                    <span>Ask Copilot</span>
+                </button>
             </div>
 
             <div className="grid grid-cols-3 gap-6 flex-1 overflow-hidden">
@@ -266,7 +266,7 @@ const IncidentDetail = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

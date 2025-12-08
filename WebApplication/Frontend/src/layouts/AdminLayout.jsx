@@ -15,6 +15,12 @@ const AdminLayout = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const [chatState, setChatState] = useState({
+        isOpen: false,
+        incidentId: null,
+        initialMsg: null
+    });
+
     React.useEffect(() => {
         const verifyAdmin = async () => {
             if (authLoading) return;
@@ -121,14 +127,17 @@ const AdminLayout = () => {
                     <NavLink to="/admin" end onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
                         <LayoutDashboard size={20} /> <span>Overview</span>
                     </NavLink>
-                    <NavLink to="/admin/rules" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
-                        <Shield size={20} /> <span>Detection Rules</span>
+                    <NavLink to="/admin/knowledge" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
+                        <BookOpen size={20} /> <span>Knowledge Base</span>
                     </NavLink>
                     <NavLink to="/admin/blocklist" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
                         <Lock size={20} /> <span>Blocklist</span>
                     </NavLink>
                     <NavLink to="/admin/incidents" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
                         <AlertCircle size={20} /> <span>Incidents</span>
+                    </NavLink>
+                    <NavLink to="/admin/assignment-requests" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
+                        <BookOpen size={20} /> <span>Requests</span>
                     </NavLink>
                     <NavLink to="/admin/playbooks" onClick={closeMobileMenu} className={({ isActive }) => `flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg transition-all border-l-2 ${isActive ? 'bg-slate-800/50 text-red-400 border-red-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-transparent'}`}>
                         <BookOpen size={20} /> <span>Playbooks</span>
@@ -185,10 +194,20 @@ const AdminLayout = () => {
                 </header>
 
                 <main className="flex-1 overflow-auto bg-[#0B1120] relative scroll-smooth w-full p-8 text-white">
-                    <Outlet />
+                    <Outlet context={{
+                        openChat: (incidentId = null, initialMsg = null) => {
+                            setChatState({ isOpen: true, incidentId, initialMsg });
+                        }
+                    }} />
                 </main>
 
-                <ChatWidget />
+                <ChatWidget
+                    isOpen={chatState.isOpen}
+                    onClose={() => setChatState(prev => ({ ...prev, isOpen: false }))}
+                    onOpen={() => setChatState(prev => ({ ...prev, isOpen: true }))}
+                    incidentId={chatState.incidentId}
+                    initialMsg={chatState.initialMsg}
+                />
             </div>
         </div>
     );

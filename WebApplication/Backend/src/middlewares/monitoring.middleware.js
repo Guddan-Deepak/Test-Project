@@ -1,11 +1,9 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import Log from "../models/Log.model.js";
 import { v4 as uuidv4 } from "uuid";
-
 import { processLog, analyzeLog } from "../utils/threatEngine.js";
 import { getIO } from "../socket.js";
 import geoip from 'geoip-lite';
-
 
 const BLOCK_MODE = true;
 
@@ -13,7 +11,6 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
     const start = Date.now();
     const requestId = uuidv4();
 
-    // // SKIP logging for the 'fetch logs' endpoint itself to prevent infinite loop/noise
     if (req.originalUrl.includes('/logs') && req.method === 'GET') {
         return next();
     }
@@ -21,26 +18,21 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
     if (!req.originalUrl.includes('/login') && !req.originalUrl.includes('/register/admin') && !req.originalUrl.includes('/register/analyst') && !req.originalUrl.includes('/auth/verify')) {
         return next();
     }
-    // --- Phase 1: Capture Request ---
+
     const contentLengthIn = req.get("content-length");
     const bytesIn = contentLengthIn ? parseInt(contentLengthIn, 10) : 0;
-
-    // Resolve IP to Geo Location
 
     const ip = req.ip || req.connection.remoteAddress;
     let geo = geoip.lookup(ip);
 
-    // --- MOCK GEO FOR LOCALHOST 
+    // Mock Geo for localhost
     if (!geo && (ip === "::1" || ip === "127.0.0.1" || ip.includes("192.168"))) {
-        // Generate random coordinates for visualization
-        // Lat: -90 to 90, Lon: -180 to 180
-        // Bias towards populated areas for realism roughly
         geo = {
             country: "LOC",
             city: "Localhost",
             ll: [
-                (Math.random() * 140) - 70, // Lat
-                (Math.random() * 360) - 180 // Lon
+                (Math.random() * 140) - 70,
+                (Math.random() * 360) - 180
             ]
         };
     }
@@ -81,60 +73,20 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
         }
     };
 
-
     const bodyString = JSON.stringify(req.body || {}).toLowerCase();
     const queryParams = JSON.stringify(req.query || {}).toLowerCase();
     const urlString = req.originalUrl.toLowerCase();
 
-    // Combine all inputs for scanning
     const payload = bodyString + queryParams + urlString;
 
     const signatures = {
-        SQLI: [
-            "' or '1'='1",
-            "union select",
-            "drop table",
-            "select * from",
-            "--",
-            ";--",
-            "insert into",
-            "update set",
-            "delete from",
-            "admin'--",
-            "1 or 1=1",
-            '" or "" = "'
-        ],
-        XSS: [
-            "<script>",
-            "javascript:",
-            "onload=",
-            "onerror=",
-            "alert(",
-            "document.cookie",
-            "eval(",
-            "window.location",
-            "<img",
-            "<svg",
-            "<iframe"
-        ],
-        RCE: [
-            "; ls",
-            "&& ls",
-            "; cat /etc/passwd",
-            "| whoami",
-            "system(",
-            "; rm -rf",
-            "| cat",
-            "$(",
-            "`whoami`",
-            "; ping",
-            ";"
-        ]
+        SQLI: ["' or '1'='1", "union select", "drop table", "select * from", "--", ";--", "insert into", "update set", "delete from", "admin'--", "1 or 1=1", '" or "" = "'],
+        XSS: ["<script>", "javascript:", "onload=", "onerror=", "alert(", "document.cookie", "eval(", "window.location", "<img", "<svg", "<iframe"],
+        RCE: ["; ls", "&& ls", "; cat /etc/passwd", "| whoami", "system(", "; rm -rf", "| cat", "$(", "`whoami`", "; ping", ";"]
     };
 
     let detectedThreat = null;
 
-    // Check SQLi
     for (const pattern of signatures.SQLI) {
         if (payload.includes(pattern)) {
             detectedThreat = { type: "SQLI", pattern };
@@ -142,7 +94,6 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
         }
     }
 
-    // Check XSS (if no SQLi found yet)
     if (!detectedThreat) {
         for (const pattern of signatures.XSS) {
             if (payload.includes(pattern)) {
@@ -152,7 +103,6 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
         }
     }
 
-    // Check RCE
     if (!detectedThreat) {
         for (const pattern of signatures.RCE) {
             if (payload.includes(pattern)) {
@@ -162,40 +112,23 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
         }
     }
 
-
     if (!detectedThreat && req.body && Array.isArray(req.body.ports) && req.body.ports.length > 3) {
-        detectedThreat = {
-            type: "PORTSCAN",
-            pattern: "Multiple Ports Detected"
-        };
+        detectedThreat = { type: "PORTSCAN", pattern: "Multiple Ports Detected" };
     }
-
 
     const authHeader = req.headers["authorization"] || "";
     if (!detectedThreat) {
         if (authHeader.includes("abc.def.ghi")) {
-            detectedThreat = {
-                type: "TOKEN_ABUSE",
-                pattern: "Tampered Token Detected"
-            };
+            detectedThreat = { type: "TOKEN_ABUSE", pattern: "Tampered Token Detected" };
         } else if (authHeader.includes("junk.invalid") || (authHeader.startsWith("Bearer ") && authHeader.split(".").length !== 3)) {
-            detectedThreat = {
-                type: "TOKEN_ABUSE",
-                pattern: "Invalid Token Structure"
-            };
+            detectedThreat = { type: "TOKEN_ABUSE", pattern: "Invalid Token Structure" };
         }
     }
 
     if (detectedThreat) {
-
         logData.category = "SECURITY";
         if (detectedThreat.type === "TOKEN_ABUSE") {
-
-            if (detectedThreat.pattern === "Tampered Token Detected") {
-                logData.eventType = "Tampered Token";
-            } else {
-                logData.eventType = "Invalid Token";
-            }
+            logData.eventType = detectedThreat.pattern === "Tampered Token Detected" ? "Tampered Token" : "Invalid Token";
             logData.severity = "MEDIUM";
         } else if (detectedThreat.type === "PORTSCAN") {
             logData.eventType = "PORT_SCAN";
@@ -206,7 +139,6 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
             logData.severity = detectedThreat.type === "RCE" ? "CRITICAL" : "HIGH";
         }
 
-
         logData.classification = "CONFIRMED_ATTACK";
         logData.attackVector = detectedThreat.type;
         logData.details.ruleId = `${detectedThreat.type}-001`;
@@ -215,22 +147,16 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
         logData.details.tags.push(detectedThreat.type);
     }
 
-
     res.on("finish", async () => {
         const duration = Date.now() - start;
-
-
         logData.userId = req.user?.id || null;
-
         logData.statusCode = res.statusCode;
         logData.details.message = `Request took ${duration}ms`;
 
-        // CHECK IF AUTH CONTROLLER SIGNALED AN ISSUE (e.g. Expired Token)
         if (res.locals.authAlert) {
             const alert = res.locals.authAlert;
             logData.category = "SECURITY";
 
-            // Dynamic Event Type Mapping based on Controller's signal
             if (alert.pattern && alert.pattern.includes('Expired')) {
                 logData.eventType = "Expired Token";
             } else if (alert.pattern && alert.pattern.includes('Signature')) {
@@ -253,13 +179,10 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
             logData.details.bytesOut = parseInt(contentLengthOut, 10);
         }
 
-
         analyzeLog(logData);
 
         try {
-
             const savedLog = await Log.create(logData);
-
 
             try {
                 getIO().emit("NEW_LOG", savedLog);
@@ -267,15 +190,12 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
                 console.error("Socket emit failed:", socketError.message);
             }
 
-
             if (logData.category === "SECURITY") {
                 processLog(savedLog);
             }
 
-            // Emit ALL logs to Socket.IO for Live Feed (including Requests)
             const io = req.app.get("io");
             if (io) {
-                // Determine if we should emit. Yes, emit everything for full visibility.
                 io.emit("new-log", savedLog);
             }
         } catch (error) {
@@ -283,23 +203,18 @@ export const monitorRequest = asyncHandler(async (req, res, next) => {
         }
     });
 
-    // Block or Next ---
     if (BLOCK_MODE && detectedThreat) {
-
-        // Custom Status Codes for different threats
         let blockStatus = 403;
         if (detectedThreat.pattern === "Tampered Token Detected") {
-            blockStatus = 401; // User requested 401 for Tampered
+            blockStatus = 401;
         }
 
-        // RETURN Block Response
         return res.status(blockStatus).json({
             success: false,
             message: "Malicious Request Detected",
             reason: `${detectedThreat.pattern} attempt blocked`,
             requestId: requestId
         });
-
     } else {
         next();
     }

@@ -10,7 +10,7 @@ const Incidents = () => {
     const { socket, isConnected } = useSocket();
     const navigate = useNavigate();
 
-    const [activeTab, setActiveTab] = useState('all'); // 'all' or 'mine'
+    const [activeTab, setActiveTab] = useState('mine'); // 'mine', 'pending', 'unassigned'
 
     // Pagination State
     const [page, setPage] = useState(1);
@@ -29,6 +29,21 @@ const Incidents = () => {
         if (node) observer.current.observe(node);
     }, [loading, hasMore]);
 
+    const handleRequestAssignment = async (e, incidentId) => {
+        e.stopPropagation(); // Prevent card click
+        if (!confirm("Request assignment for this incident?")) return;
+
+        try {
+            const res = await api.post(`/incidents/${incidentId}/request-assignment`);
+            if (res.data.success) {
+                alert("Request submitted successfully!");
+            }
+        } catch (error) {
+            console.error("Request failed", error);
+            alert(error.response?.data?.message || "Failed to submit request");
+        }
+    };
+
     const fetchIncidents = async (pageNum, isNewFilter = false) => {
         setLoading(true);
         try {
@@ -37,7 +52,10 @@ const Incidents = () => {
                 limit: 15
             };
             if (statusFilter) params.status = statusFilter;
+            if (statusFilter) params.status = statusFilter;
             if (activeTab === 'mine') params.assignedTo = 'me';
+            if (activeTab === 'pending') params.assignedTo = 'pending';
+            if (activeTab === 'unassigned') params.assignedTo = 'unassigned';
 
             const res = await api.get('/incidents', { params });
             if (res.data.success) {
@@ -145,19 +163,24 @@ const Incidents = () => {
                 </div>
             </div>
 
-            {/* Tab Navigation */}
             <div className="flex border-b border-slate-700 mb-6">
-                <button
-                    className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'all' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
-                    onClick={() => setActiveTab('all')}
-                >
-                    All Incidents
-                </button>
                 <button
                     className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'mine' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
                     onClick={() => setActiveTab('mine')}
                 >
-                    Assigned to Me
+                    Assigned Incident
+                </button>
+                <button
+                    className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'pending' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                    onClick={() => setActiveTab('pending')}
+                >
+                    Pending Requests
+                </button>
+                <button
+                    className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'unassigned' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                    onClick={() => setActiveTab('unassigned')}
+                >
+                    New Incidents
                 </button>
             </div>
 
@@ -202,10 +225,19 @@ const Incidents = () => {
                                     <p className="text-sm text-slate-400 flex items-center gap-1 justify-end">
                                         <Clock size={14} /> {new Date(incident.lastSeenAt).toLocaleString()}
                                     </p>
-                                    <div className="mt-3">
+                                    <div className="mt-3 flex flex-col items-end gap-2">
                                         <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${incident.status === 'OPEN' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : incident.status === 'IN_PROGRESS' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
                                             {incident.status.replace('_', ' ')}
                                         </span>
+
+                                        {activeTab === 'unassigned' && incident.status === 'OPEN' && (
+                                            <button
+                                                onClick={(e) => handleRequestAssignment(e, incident.incidentId)}
+                                                className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors"
+                                            >
+                                                Request Assignment
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -6,12 +6,31 @@ const ragChunkSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    metadata: {
-        type: Object, // e.g., { type: 'playbook', title: 'Phishing', source: 'SOP-1' }
-        default: {}
+    // New fields as per requirements
+    sourceType: {
+        type: String,
+        required: true,
+        enum: ["PLAYBOOK", "RULE_DOC", "MITRE", "SOP", "TEMPLATE"],
+        default: "SOP"
+    },
+    sourceName: {
+        type: String,
+        required: true
+    },
+    ruleId: {
+        type: String,
+        default: null
+    },
+    mitreId: {
+        type: String,
+        default: null
+    },
+    tags: {
+        type: [String],
+        default: []
     },
     embedding: {
-        type: [Number], // Vector string
+        type: [Number],
         required: true
     },
     isActive: {
@@ -20,7 +39,9 @@ const ragChunkSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// Basic index for metadata searching
-ragChunkSchema.index({ "metadata.type": 1 });
+// Indexes for filtering
+ragChunkSchema.index({ ruleId: 1 });
+ragChunkSchema.index({ sourceType: 1 });
+ragChunkSchema.index({ tags: 1 });
 
 export const RagChunk = mongoose.model('RagChunk', ragChunkSchema);
