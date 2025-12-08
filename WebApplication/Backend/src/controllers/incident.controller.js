@@ -2,14 +2,11 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 import Incident from "../models/Incident.model.js";
+import IncidentAssignmentRequest from "../models/IncidentAssignmentRequest.model.js";
 
-// Utility for checking valid severity/status enums
 const VALID_STATUSES = ["OPEN", "IN_PROGRESS", "CLOSED_TRUE_POSITIVE", "CLOSED_FALSE_POSITIVE"];
 const VALID_SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
-/**
- * Endpoint to get a list of all incidents with pagination and filtering.
- */
 const getIncidents = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, status, severity, attackerIP, assignedTo } = req.query;
     const query = {};
@@ -24,9 +21,19 @@ const getIncidents = asyncHandler(async (req, res) => {
         query.sourceIp = attackerIP;
     }
     if (assignedTo) {
-        // If assignedTo is 'me', user current user's username or id
         if (assignedTo === 'me') {
-            query.assignedTo = req.user.username; // Storing username in assignedTo based on previous schema
+            query.assignedTo = req.user.email;
+        } else if (assignedTo === 'null' || assignedTo === 'unassigned') {
+            query.assignedTo = null;
+            query.status = "OPEN";
+        } else if (assignedTo === 'pending') {
+            const myRequests = await IncidentAssignmentRequest.find({
+                requestedBy: req.user._id,
+                status: "PENDING"
+            }).select('incident');
+
+            const incidentIds = myRequests.map(req => req.incident);
+            query._id = { $in: incidentIds };
         } else {
             query.assignedTo = assignedTo;
         }
@@ -71,17 +78,16 @@ const assignIncident = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Incident not found");
     }
 
-
-    if (incident.assignedTo && incident.assignedTo !== user.username) {
+    if (incident.assignedTo && incident.assignedTo !== user.email) {
         throw new ApiError(403, `Incident is already assigned to ${incident.assignedTo}. Only admins can reassign.`);
     }
 
-    incident.assignedTo = user.username;
-    incident.status = "IN_PROGRESS"; // Auto-update status
+    incident.assignedTo = user.email;
+    incident.status = "IN_PROGRESS";
     await incident.save();
 
     return res.status(200).json(
-        new ApiResponse(200, incident, `Incident assigned to ${user.username}`)
+        new ApiResponse(200, incident, `Incident assigned to ${user.email}`)
     );
 });
 
@@ -95,17 +101,13 @@ const unassignIncident = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Incident not found");
     }
 
-    // Check if assigned to current user
-    if (incident.assignedTo !== user.username) {
-        // Allow admin to force unassign (future proofing), but for now restrict
+    if (incident.assignedTo !== user.email) {
         if (user.role !== 'admin') {
             throw new ApiError(403, "You can only unassign incidents assigned to yourself.");
         }
     }
 
     incident.assignedTo = null;
-    // Optional: Revert status to OPEN if it was IN_PROGRESS? 
-    // Usually better to leave status or set to OPEN. Let's set to OPEN for cleanliness.
     if (incident.status === "IN_PROGRESS") {
         incident.status = "OPEN";
     }
@@ -131,23 +133,13 @@ const triageIncident = asyncHandler(async (req, res) => {
     }
 
     const updateFields = {};
-    const currentStatus = incident.status;
-
 
     if (status && VALID_STATUSES.includes(status.toUpperCase())) {
-        const newStatus = status.toUpperCase();
-        if (newStatus === "IN_PROGRESS" && !incident.assignedTo && !assignedTo) {
-            // throw new ApiError(400, "Assignee is required when setting status to IN_PROGRESS");
-            // Instead of error, auto-assign to current user if not provided? 
-            // Logic kept strict for now as per previous, but client should handle assignment first.
-        }
-        updateFields.status = newStatus;
+        updateFields.status = status.toUpperCase();
     }
 
-    // 3. Other Updates
-    // Strict assignment check for triage as well
     if (assignedTo) {
-        if (incident.assignedTo && incident.assignedTo !== req.user.username && incident.assignedTo !== assignedTo && req.user.role !== 'admin') {
+        if (incident.assignedTo && incident.assignedTo !== req.user.email && incident.assignedTo !== assignedTo && req.user.role !== 'admin') {
             throw new ApiError(403, "Cannot reassign incident assigned to another analyst");
         }
         updateFields.assignedTo = assignedTo;
@@ -194,4 +186,38 @@ const getIncidentDetails = asyncHandler(async (req, res) => {
     );
 });
 
-export { getIncidents, triageIncident, getIncidentDetails, assignIncident, unassignIncident };
+
+const requestAssignment = asyncHandler(async (req, res) => {
+    const { incidentId } = req.params;
+    const user = req.user;
+
+    const incident = await Incident.findOne({ incidentId });
+    if (!incident) {
+        throw new ApiError(404, "Incident not found");
+    }
+
+    if (incident.assignedTo) {
+        throw new ApiError(400, "Incident is already assigned");
+    }
+
+    const existingRequest = await IncidentAssignmentRequest.findOne({
+        incident: incident._id,
+        requestedBy: user._id,
+        status: "PENDING"
+    });
+
+    if (existingRequest) {
+        throw new ApiError(400, "You already have a pending request for this incident");
+    }
+
+    await IncidentAssignmentRequest.create({
+        incident: incident._id,
+        requestedBy: user._id
+    });
+
+    return res.status(200).json(
+        new ApiResponse(200, null, "Assignment request submitted successfully")
+    );
+});
+
+export { getIncidents, triageIncident, getIncidentDetails, assignIncident, unassignIncident, requestAssignment };

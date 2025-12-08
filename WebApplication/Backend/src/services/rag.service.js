@@ -2,37 +2,39 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { RagChunk } from "../models/RagChunk.model.js";
 import Incident from "../models/Incident.model.js";
 
-const getApiKeys = () => {
-    const keys = process.env.GEMINI_API_KEYS ? process.env.GEMINI_API_KEYS.split(',') : [];
-    if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
-    return [...new Set(keys.filter(k => k))]; // Unique non-empty keys
+// Helper: Get Clients Lazily
+let clients = [];
+
+const getClients = () => {
+    if (clients.length === 0) {
+        const keys = process.env.GEMINI_API_KEYS ? process.env.GEMINI_API_KEYS.split(',') : [];
+        if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
+        const uniqueKeys = [...new Set(keys.filter(k => k))];
+
+        if (uniqueKeys.length === 0) {
+            console.warn("No GEMINI_API_KEYS provided. RAG features will fail.");
+            throw new Error("Missing GEMINI_API_KEYS");
+        }
+        clients = uniqueKeys.map(key => new GoogleGenerativeAI(key));
+    }
+    return clients;
 };
-
-const apiKeys = getApiKeys();
-if (apiKeys.length === 0) {
-    console.warn("No GEMINI_API_KEYS provided. RAG features will fail.");
-}
-
-const clients = apiKeys.map(key => new GoogleGenerativeAI(key));
 
 // Helper: Execute with Rotation
 const executeWithRetry = async (operationName, operationFn) => {
+    const activeClients = getClients();
     let lastError = null;
-    for (let i = 0; i < clients.length; i++) {
+    for (let i = 0; i < activeClients.length; i++) {
         try {
-            // Simple round-robin or just failover? Requirement says: Key 1 fails -> Key 2.
-            // So we try client[i].
-            return await operationFn(clients[i]);
+            return await operationFn(activeClients[i]);
         } catch (error) {
             console.warn(`[RAG] Key ${i + 1} failed for ${operationName}:`, error.message);
             lastError = error;
-            // Continue to next key
         }
     }
     throw lastError || new Error(`All API keys failed for ${operationName}`);
 };
 
-// Helper: Cosine Similarity
 const cosineSimilarity = (vecA, vecB) => {
     let dotProduct = 0;
     let normA = 0;
@@ -60,88 +62,36 @@ export const ragService = {
         }
     },
 
-    // 2. Search Chunks (Semantic Search)
-    search: async (queryText, topK = 5) => {
-        const queryEmbedding = await ragService.embedText(queryText);
-
-        // Fetch all chunks (For "Mini" SOC this is fine. For production, use Vector DB like Pinecone/Mongo Atlas Search)
-        // Optimization: Select only embedding and content to reduce RAM usage slightly if needed, but we need metadata too.
-        const allChunks = await RagChunk.find({ isActive: true }).lean();
-
-        const chunksWithScore = allChunks.map(chunk => ({
-            ...chunk,
-            score: cosineSimilarity(queryEmbedding, chunk.embedding)
-        }));
-
-        // Sort by score desc
-        chunksWithScore.sort((a, b) => b.score - a.score);
-
-        return chunksWithScore.slice(0, topK);
-    },
-
-    // 3. Get Live Context
-    getLiveContext: async (queryText) => {
-        // Simple regex to find Incident IDs like INC-1234
-        const incidentMatch = queryText.match(/(INC-\d+)/i);
-        if (incidentMatch) {
-            const incidentId = incidentMatch[0].toUpperCase();
-            const incident = await Incident.findOne({ incidentId }).lean();
-            if (incident) {
-                return `LIVE INCIDENT FOUND:\n${JSON.stringify(incident, null, 2)}`;
+    // 2. Helper: Vector Search (Raw MongoDB Aggregation)
+    vectorSearch: async (queryEmbedding, limit = 5) => {
+        const pipeline = [
+            {
+                $vectorSearch: {
+                    index: "vector_index", // ye likhenge to mongodb apne normal btree search se hatke vector index ke hisab se vector search karega ,ab wo vector embedding hai kaha wo neech path me diya hai
+                    path: "embedding",
+                    queryVector: queryEmbedding,
+                    numCandidates: 100,
+                    limit: limit
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    content: 1,
+                    sourceType: 1,
+                    sourceName: 1,
+                    ruleId: 1,
+                    mitreId: 1,
+                    embedding: 1, // Needed for re-ranking
+                    score: { $meta: "vectorSearchScore" }
+                }
             }
-        }
-        return "No specific live incident ID detected in query.";
+        ];
+        return await RagChunk.aggregate(pipeline);
     },
 
-    // 4. Generate Response
-    generateResponse: async (query, contextChunks, liveContext) => {
-
-        const contextText = contextChunks.map(c => `[${c.metadata.type || 'INFO'}] ${c.content}`).join("\n\n");
-
-        const prompt = `
-You are SHIELD, an elite SOC (Security Operations Center) Assistant.
-Your goal is to help security analysts investigate incidents and understand threats.
-
-CONTEXT FROM KNOWLEDGE BASE:
-${contextText}
-
-LIVE SYSTEM DATA:
-${liveContext}
-
-USER QUESTION:
-${query}
-
-INSTRUCTIONS:
-- Be concise, technical, and actionable.
-- Use bullet points for steps.
-- If the RAG context or Live data helps, reference it.
-- If you don't know, say "I don't have enough info in my knowledge base."
-- Do NOT make up fake incident details if they aren't in the LIVE SYSTEM DATA.
-        `;
-
-        return await executeWithRetry("GenerateResponse", async (client) => {
-            const model = client.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-            const result = await model.generateContent(prompt);
-            return result.response.text();
-        });
-    },
-
-    // 5. Full Pipeline Wrapper
-    processChat: async (userMessage) => {
-        // A. Search
-        const chunks = await ragService.search(userMessage);
-
-        // B. Live Context
-        const liveData = await ragService.getLiveContext(userMessage);
-
-        // C. Generate
-        const reply = await ragService.generateResponse(userMessage, chunks, liveData);
-
-        return {
-            reply,
-            sources: chunks.map(c => c.metadata.title || 'Unknown Source')
-        };
-    }
+    // 3. Helper: Cosine Similarity
+    cosineSimilarity
 };
 
 // Seed function to add some dummy data if empty

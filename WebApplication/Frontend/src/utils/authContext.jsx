@@ -1,5 +1,6 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
+import api from "./api"; // Ensure api instance is imported for cleanup call
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -76,6 +77,10 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
+            // 1. Wipe Chat History (Redis)
+            await api.delete('/ai/history').catch(err => console.warn("Failed to clear chat history", err));
+
+            // 2. Call Backend Logout
             await fetch(`${API_URL}/logout`, {
                 method: 'POST',
                 credentials: 'include'

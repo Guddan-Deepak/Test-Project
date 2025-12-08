@@ -22,7 +22,7 @@ const incidentSchema = new Schema(
         },
         status: {
             type: String,
-            enum: ["OPEN", "IN_PROGRESS", "RESOLVED", "FALSE_POSITIVE"],
+            enum: ["OPEN", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "FALSE_POSITIVE"],
             default: "OPEN"
         },
         occurrenceCount: {

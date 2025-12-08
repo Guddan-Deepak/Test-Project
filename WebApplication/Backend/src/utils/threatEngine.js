@@ -45,7 +45,7 @@ export const processLog = async (logDoc) => {
             // 3. Check for existing OPEN incident for this IP
             let incident = await Incident.findOne({
                 sourceIp: sourceIP,
-                status: { $in: ["OPEN", "IN_PROGRESS"] }
+                status: { $in: ["OPEN", "ASSIGNED", "IN_PROGRESS"] }
             });
 
             if (incident) {

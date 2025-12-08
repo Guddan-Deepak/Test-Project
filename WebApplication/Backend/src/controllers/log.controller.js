@@ -4,6 +4,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 import Log from "../models/Log.model.js";
 import { v4 as uuidv4 } from "uuid";
 import { processLog, analyzeLog } from "../utils/threatEngine.js";
+import Incident from "../models/Incident.model.js";
 
 const createLog = asyncHandler(async (req, res) => {
     const logData = req.body;
@@ -46,7 +47,7 @@ const createLog = asyncHandler(async (req, res) => {
     )
 })
 
-// ... imports ...
+
 
 const getLogs = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, severity, classification, attackVector, category, sourceIP, endpoint, startTime, endTime } = req.query;
@@ -88,7 +89,7 @@ const getLogs = asyncHandler(async (req, res) => {
     )
 })
 
-import Incident from "../models/Incident.model.js";
+
 
 const getLogStats = asyncHandler(async (req, res) => {
     const today = new Date();

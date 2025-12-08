@@ -9,12 +9,19 @@ import ChatWidget from '../components/Chatbot/ChatWidget';
 import socLogo from '../assets/soc-logo.png';
 
 const DashboardLayout = () => {
-    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { isAuthenticated, loading: authLoading, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Global Chat State
+    const [chatState, setChatState] = useState({
+        isOpen: false,
+        incidentId: null,
+        initialMsg: null
+    });
 
     React.useEffect(() => {
         const verifyUser = async () => {
@@ -49,9 +56,8 @@ const DashboardLayout = () => {
         verifyUser();
     }, [isAuthenticated, authLoading, navigate]);
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+    const handleLogout = async () => {
+        await logout();
         navigate("/login");
     }
 
@@ -171,7 +177,6 @@ const DashboardLayout = () => {
 
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col min-w-0 pt-16 md:pt-0">
-                    {/* Top Header (Desktop Only) */}
                     <header className="hidden md:flex h-16 bg-[#0F172A] border-b border-slate-800 items-center justify-between px-8 z-10 w-full">
                         {/* Breadcrumb / Title */}
                         <div>
@@ -201,12 +206,21 @@ const DashboardLayout = () => {
                     </header>
 
                     {/* Scrollable Content */}
-                    {/* Scrollable Content */}
                     <main className="flex-1 overflow-auto bg-[#0B1120] relative scroll-smooth w-full">
-                        <Outlet />
+                        <Outlet context={{
+                            openChat: (incidentId = null, initialMsg = null) => {
+                                setChatState({ isOpen: true, incidentId, initialMsg });
+                            }
+                        }} />
                     </main>
 
-                    <ChatWidget />
+                    <ChatWidget
+                        isOpen={chatState.isOpen}
+                        onClose={() => setChatState(prev => ({ ...prev, isOpen: false }))}
+                        onOpen={() => setChatState(prev => ({ ...prev, isOpen: true }))}
+                        incidentId={chatState.incidentId}
+                        initialMsg={chatState.initialMsg}
+                    />
                 </div>
             </div>
         </SocketProvider>

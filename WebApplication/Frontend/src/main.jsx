@@ -14,21 +14,21 @@ import CompleteProfile from './components/CompleteProfile.jsx'
 import { AuthProvider } from './utils/authContext.jsx'
 import Contact from './components/pages/contact/Contact.jsx'
 import About from './components/pages/About/About.jsx'
-// import Dashboard from './components/pages/DashBoard/Dashborad.jsx' // Upstream dashboard (Conflicted with Analyst Dashboard)
 
-// Analyst Dashboard Components (HEAD)
+// Analyst Dashboard Components
 import DashboardLayout from './layouts/DashboardLayout.jsx'
 import Overview from './pages/Overview.jsx'
 import LiveLogs from './pages/LiveLogs.jsx'
 import Incidents from './pages/Incidents.jsx'
 import IncidentDetail from './pages/IncidentDetail.jsx'
 
-// Admin Dashboard Components (HEAD)
+// Admin Dashboard Components
 import AdminLayout from './layouts/AdminLayout.jsx'
 import AdminOverview from './pages/admin/AdminOverview.jsx'
-import Rules from './pages/admin/Rules.jsx'
+import KnowledgeBase from './pages/admin/KnowledgeBase.jsx'
 import Blocklist from './pages/admin/Blocklist.jsx'
 import Users from './pages/admin/Users.jsx'
+import AssignmentRequests from './pages/admin/AssignmentRequests.jsx'
 
 const router = createBrowserRouter(
     createRoutesFromElements(
@@ -55,9 +55,10 @@ const router = createBrowserRouter(
             {/* Admin Dashboard */}
             <Route path='admin' element={<AdminLayout />}>
                 <Route index element={<AdminOverview />} />
-                <Route path='rules' element={<Rules />} />
+                <Route path='knowledge' element={<KnowledgeBase />} />
                 <Route path='blocklist' element={<Blocklist />} />
                 <Route path='users' element={<Users />} />
+                <Route path='assignment-requests' element={<AssignmentRequests />} />
                 <Route path='incidents' element={<div className="text-white p-8">Incident Management (Coming Soon)</div>} />
                 <Route path='playbooks' element={<div className="text-white p-8">SOAR Playbooks (Coming Soon)</div>} />
                 <Route path='audit' element={<div className="text-white p-8">Audit Logs (Coming Soon)</div>} />
